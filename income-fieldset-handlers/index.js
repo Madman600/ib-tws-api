@@ -260,7 +260,7 @@ export default {
 
     for (let n = 0; n < itemCount; n++) {
       let bar = {
-        date: fields.shift(),
+        date: parseInt(fields.shift()),
         open: parseFloat(fields.shift()),
         high: parseFloat(fields.shift()),
         low: parseFloat(fields.shift()),
