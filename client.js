@@ -129,7 +129,7 @@ class Client {
     this._nextValidId = nextValidId;
 
     debuglog('connected ');
-    debuglog({nextValidId: nextValidId, accounts: accounts});
+    debuglog({ nextValidId: nextValidId, accounts: accounts });
   }
 
 
@@ -159,7 +159,7 @@ class Client {
 
 
 
-  _onMessageFieldset(fields) {
+   _onMessageFieldset(fields) {
     if (!this._serverVersion) {
       this._incomeHandler.processMessageFieldsetBeforeServerVersion(fields);
     } else {
@@ -1095,7 +1095,7 @@ class Client {
       flds.push(contract.primaryExchange);
     } else if (this._serverVersion >= ServerVersion.MIN_SERVER_VER_LINKING) {
       if (contract.primaryExchange &&
-          (contract.exchange == "BEST" || contract.exchange == "SMART")) {
+        (contract.exchange == "BEST" || contract.exchange == "SMART")) {
         flds.push(contract.exchange + ":" + contract.primaryExchange);
       } else {
         flds.push(contract.exchange);
@@ -1754,7 +1754,7 @@ class Client {
 
 
     if (this._serverVersion < ServerVersion.MIN_SERVER_VER_SCANNER_GENERIC_OPTS &&
-          cannerSubscriptionFilterOptions != null) {
+      cannerSubscriptionFilterOptions != null) {
       throw new Error("It does not support API scanner subscription generic filter options")
     }
 
@@ -1821,100 +1821,107 @@ class Client {
   }
 
 
+  async streamRealtimeBars(p) {
+    p.requestId = await this._allocateRequestId();
+    await this._sendFieldsetRateLimited(await this.reqRealTimeBars(p));
 
+    return this._incomeHandler.requestIdEmitter(p.requestId, () => {
+      this._sendFieldsetRateLimited(
+        this.reqCancelRealTimeBars(p.requestId));
+    });
+  }
   /*
-  #########################################################################
-  ################## Real Time Bars
-  #########################################################################
-  */
+#########################################################################
+################## Real Time Bars
+#########################################################################
+*/
 
-  async reqRealTimeBars(/*self, requestId:TickerId, contract:Contract, barSize:int,
+  async reqRealTimeBars(p/*self, requestId:TickerId, contract:Contract, barSize:int,
                     whatToShow:str, useRth:bool,
                     realTimeBarsOptions:TagValueList*/) {
-    throw new Error('not implemented yet');
+
+
+    let contract = p.contract;
+    let whatToShow = p.whatToShow;
+    let useRth = p.useRth;
+
+
     /*
-    """Call the reqRealTimeBars() function to start receiving real time bar
-    results through the realtimeBar() EWrapper function.
-
-    requestId:TickerId - The Id for the request. Must be a unique value. When the
-        data is received, it will be identified by this Id. This is also
-        used when canceling the request.
-    contract:Contract - This object contains a description of the contract
-        for which real time bars are being requested
-    barSize:int - Currently only 5 second bars are supported, if any other
-        value is used, an exception will be thrown.
-    whatToShow:str - Determines the nature of the data extracted. Valid
-        values include:
-        TRADES
-        BID
-        ASK
-        MIDPOINT
-    useRth:bool - Regular Trading Hours only. Valid values include:
-        0 = all data available during the time span requested is returned,
-            including time intervals when the market in question was
-            outside of regular trading hours.
-        1 = only data within the regular trading hours for the product
-            requested is returned, even if the time time span falls
-            partially or completely outside.
-    realTimeBarOptions:TagValueList - For internal use only. Use default value XYZ."""
 
 
 
-    if (this._serverVersion < ServerVersion.MIN_SERVER_VER_TRADING_CLASS) {
-        if contract.tradingClass:
-            throw new Error( requestId, UPDATE_TWS.code(),
-                "It does not support conId and tradingClass parameter in reqRealTimeBars.")
-            return
+"""Call the reqRealTimeBars() function to start receiving real time bar
+results through the realtimeBar() EWrapper function.
 
-    const VERSION = 3;
+requestId:TickerId - The Id for the request. Must be a unique value. When the
+data is received, it will be identified by this Id. This is also
+used when canceling the request.
+contract:Contract - This object contains a description of the contract
+for which real time bars are being requested
+barSize:int - Currently only 5 second bars are supported, if any other
+value is used, an exception will be thrown.
+whatToShow:str - Determines the nature of the data extracted. Valid
+values include:
+TRADES
 
-    let flds = []
-    flds += [flds.push(OutcomeMessageType.REQ_REAL_TIME_BARS),
-        flds.push(VERSION),
-        flds.push(requestId)]
+BID
+ASK
+MIDPOINT
+useRth:bool - Regular Trading Hours only. Valid values include:
+0 = all data available during the time span requested is returned,
+including time intervals when the market in question was
+outside of regular trading hours.
+1 = only data within the regular trading hours for the product
+requested is returned, even if the time time span falls
+partially or completely outside.
+realTimeBarOptions:TagValueList - For internal use only. Use default value XYZ."""
+
+*/
+
+    // const VERSION = 6;
+
+    let flds = [OutcomeMessageType.REQ_REAL_TIME_BARS, 3]
+    // if (this._serverVersion < ServerVersion.MIN_SERVER_VER_SYNT_REALTIME_BARS) {
+    //   flds.push(VERSION);
+    // }
+    flds.push(p.requestId);
+    flds.push(contract.conId);
 
     // send contract fields
-    if (this._serverVersion >= ServerVersion.MIN_SERVER_VER_TRADING_CLASS) {
-        flds += [flds.push(contract.conId),]
-    flds += [flds.push(contract.symbol),
-        flds.push(contract.secType),
-        flds.push(contract.lastTradeDateOrContractMonth),
-        flds.push(contract.strike),
-        flds.push(contract.right),
-        flds.push(contract.multiplier),
-        flds.push(contract.exchange),
-        flds.push(contract.primaryExchange),
-        flds.push(contract.currency),
-        flds.push(contract.localSymbol)]
-    if (this._serverVersion >= ServerVersion.MIN_SERVER_VER_TRADING_CLASS) {
-        flds += [flds.push(contract.tradingClass),]
-    flds += [flds.push(barSize),
-        flds.push(whatToShow),
-        flds.push(useRth)]
+    flds.push(contract.symbol);
+    flds.push(contract.secType);
+    flds.push(contract.lastTradeDateOrContractMonth);
+    flds.push(contract.strike);
+    flds.push(contract.right);
+    flds.push(contract.multiplier);
+    flds.push(contract.exchange);
+    flds.push(contract.primaryExchange);
+    flds.push(contract.currency);
+    flds.push(contract.localSymbol);
 
-    // send realTimeBarsOptions parameter
-    if (this._serverVersion >= ServerVersion.MIN_SERVER_VER_LINKING) {
-        realTimeBarsOptionsStr = ""
-        if realTimeBarsOptions:
-            for tagValueOpt in realTimeBarsOptions:
-                realTimeBarsOptionsStr += str(tagValueOpt)
-        flds += [flds.push(realTimeBarsOptionsStr),]
+    //if (this._serverVersion >= ServerVersion.MIN_SERVER_VER_TRADING_CLASS) {
+      flds.push(contract.tradingClass);
+    //}
 
-    msg = "".join(flds)
-    this._sendFieldsetRateLimited(msg)
-    */
+
+    flds.push("")
+    flds.push(whatToShow);   // srv v20 and above
+    flds.push(useRth)
+    flds.push([]);
+
+
+    return flds;
   }
 
 
-
-  async cancelRealTimeBars(requestId) {
+  reqCancelRealTimeBars(requestId) {
     /*
     Call the cancelRealTimeBars() function to stop receiving real time bar results.
     requestId:TickerId - The Id that was specified in the call to reqRealTimeBars(). */
     const VERSION = 1;
 
     // send req mkt data msg
-    await this._sendFieldsetRateLimited([OutcomeMessageType.CANCEL_REAL_TIME_BARS, VERSION, requestId]);
+    return [OutcomeMessageType.CANCEL_REAL_TIME_BARS, VERSION, requestId];
   }
 
 
@@ -1933,12 +1940,12 @@ class Client {
     stocks. The appropriate market data subscription must be set up in
     Account Management before you can receive this data.
     Fundamental data will be returned at EWrapper.fundamentalData().
-
+ 
     reqFundamentalData() can handle conid specified in the Contract object,
     but not tradingClass or multiplier. This is because reqFundamentalData()
     is used only for stocks and stocks do not have a multiplier and
     trading class.
-
+ 
     requestId:tickerId - The ID of the data request. Ensures that responses are
          matched to requests if several requests are in process.
     contract:Contract - This structure contains a description of the
@@ -1950,24 +1957,24 @@ class Client {
         ReportsFinStatements (financial statements)
         RESC (analyst estimates)
         CalendarReport (company calendar) """
-
-
-
+ 
+ 
+ 
     const VERSION = 2;
-
+ 
     if (this._serverVersion < ServerVersion.MIN_SERVER_VER_FUNDAMENTAL_DATA) {
         throw new Error(          "  It does not support fundamental data request.")
         return
-
+ 
     if (this._serverVersion < ServerVersion.MIN_SERVER_VER_TRADING_CLASS) {
         throw new Error(          "  It does not support conId parameter in reqFundamentalData.")
         return
-
+ 
     let flds = []
     flds += [flds.push(OutcomeMessageType.REQ_FUNDAMENTAL_DATA),
         flds.push(VERSION),
         flds.push(requestId)]
-
+ 
     // send contract fields
     if (this._serverVersion >= ServerVersion.MIN_SERVER_VER_TRADING_CLASS) {
         flds += [flds.push(contract.conId),]
@@ -1978,7 +1985,7 @@ class Client {
         flds.push(contract.currency),
         flds.push(contract.localSymbol),
         flds.push(reportType)]
-
+ 
     if (this._serverVersion >= ServerVersion.MIN_SERVER_VER_LINKING) {
         fundDataOptStr = ""
         tagValuesCount = len(fundamentalDataOptions) if fundamentalDataOptions else 0
@@ -1987,7 +1994,7 @@ class Client {
                 fundDataOptStr += str(fundDataOption)
         flds += [flds.push(tagValuesCount),
             flds.push(fundDataOptStr)]
-
+ 
     msg = "".join(flds)
     this._sendFieldsetRateLimited(msg)
     */
@@ -1999,21 +2006,21 @@ class Client {
     throw new Error('not implemented yet');
     /*
     """stop receiving fundamental data.
-
+ 
     requestId:TickerId - The ID of the data request."""
-
-
-
+ 
+ 
+ 
     if (this._serverVersion < ServerVersion.MIN_SERVER_VER_FUNDAMENTAL_DATA) {
         throw new Error(              "  It does not support fundamental data request.")
         return
-
+ 
     const VERSION = 1;
-
+ 
     msg = flds.push(OutcomeMessageType.CANCEL_FUNDAMENTAL_DATA) \
        + flds.push(VERSION)   \
        + flds.push(requestId)
-
+ 
     this._sendFieldsetRateLimited(msg)
     */
   }
@@ -2032,9 +2039,9 @@ class Client {
     if (this._serverVersion < ServerVersion.MIN_SERVER_VER_REQ_NEWS_PROVIDERS) {
         throw new Error(                 "  It does not support news providers request.")
         return
-
+ 
     msg = flds.push(OutcomeMessageType.REQ_NEWS_PROVIDERS)
-
+ 
     this._sendFieldsetRateLimited(msg)
     */
   }
@@ -2047,14 +2054,14 @@ class Client {
     if (this._serverVersion < ServerVersion.MIN_SERVER_VER_REQ_NEWS_ARTICLE) {
         throw new Error(                 "  It does not support news article request.")
         return
-
+ 
     let flds = []
-
+ 
     flds += [flds.push(OutcomeMessageType.REQ_NEWS_ARTICLE),
              flds.push(requestId),
              flds.push(providerCode),
              flds.push(articleId)]
-
+ 
     // send newsArticleOptions parameter
     if (this._serverVersion >= ServerVersion.MIN_SERVER_VER_NEWS_QUERY_ORIGINS) {
         newsArticleOptionsStr = ""
@@ -2062,7 +2069,7 @@ class Client {
             for tagValue in newsArticleOptions:
                 newsArticleOptionsStr += str(tagValue)
         flds += [flds.push(newsArticleOptionsStr),]
-
+ 
     msg = "".join(flds)
     this._sendFieldsetRateLimited(msg)
     */
@@ -2077,9 +2084,9 @@ class Client {
     if (this._serverVersion < ServerVersion.MIN_SERVER_VER_REQ_HISTORICAL_NEWS) {
         throw new Error(                 "  It does not support historical news request.")
         return
-
+ 
     let flds = []
-
+ 
     flds += [flds.push(OutcomeMessageType.REQ_HISTORICAL_NEWS),
              flds.push(requestId),
              flds.push(conId),
@@ -2087,7 +2094,7 @@ class Client {
              flds.push(startDateTime),
              flds.push(endDateTime),
              flds.push(totalResults)]
-
+ 
     // send historicalNewsOptions parameter
     if (this._serverVersion >= ServerVersion.MIN_SERVER_VER_NEWS_QUERY_ORIGINS) {
         historicalNewsOptionsStr = ""
@@ -2095,7 +2102,7 @@ class Client {
             for tagValue in historicalNewsOptionsStr:
                 historicalNewsOptionsStr += str(tagValue)
         flds += [flds.push(historicalNewsOptionsStr),]
-
+ 
     msg = "".join(flds)
     this._sendFieldsetRateLimited(msg)
     */
@@ -2114,22 +2121,22 @@ class Client {
     /*
     """API requests used to integrate with TWS color-grouped windows (display groups).
     TWS color-grouped windows are identified by an integer number. Currently that number ranges from 1 to 7 and are mapped to specific colors, as indicated in TWS.
-
+ 
     requestId:int - The unique number that will be associated with the
         response """
-
-
-
+ 
+ 
+ 
     if (this._serverVersion < ServerVersion.MIN_SERVER_VER_LINKING) {
         throw new Error(              "  It does not support queryDisplayGroups request.")
         return
-
+ 
     const VERSION = 1;
-
+ 
     msg = flds.push(OutcomeMessageType.QUERY_DISPLAY_GROUPS) \
        + flds.push(VERSION)   \
        + flds.push(requestId)
-
+ 
     this._sendFieldsetRateLimited(msg)
     */
   }
@@ -2142,20 +2149,20 @@ class Client {
     """requestId:int - The unique number associated with the notification.
     groupId:int - The ID of the group, currently it is a number from 1 to 7.
         This is the display group subscription request sent by the API to TWS."""
-
-
-
+ 
+ 
+ 
     if (this._serverVersion < ServerVersion.MIN_SERVER_VER_LINKING) {
         throw new Error(              "  It does not support subscribeToGroupEvents request.")
         return
-
+ 
     const VERSION = 1;
-
+ 
     msg = flds.push(OutcomeMessageType.SUBSCRIBE_TO_GROUP_EVENTS) \
        + flds.push(VERSION)   \
        + flds.push(requestId) \
        + flds.push(groupId)
-
+ 
     this._sendFieldsetRateLimited(msg)
     */
   }
@@ -2168,25 +2175,25 @@ class Client {
     """requestId:int - The requestId specified in subscribeToGroupEvents().
     contractInfo:str - The encoded value that uniquely represents the
         contract in IB. Possible values include:
-
+ 
         none = empty selection
         contractID@exchange - any non-combination contract.
             Examples: 8314@SMART for IBM SMART; 8314@ARCA for IBM @ARCA.
         combo = if any combo is selected."""
-
-
-
+ 
+ 
+ 
     if (this._serverVersion < ServerVersion.MIN_SERVER_VER_LINKING) {
         throw new Error(              "  It does not support updateDisplayGroup request.")
         return
-
+ 
     const VERSION = 1;
-
+ 
     msg = flds.push(OutcomeMessageType.UPDATE_DISPLAY_GROUP) \
        + flds.push(VERSION)   \
        + flds.push(requestId) \
        + flds.push(contractInfo)
-
+ 
     this._sendFieldsetRateLimited(msg)
     */
   }
@@ -2196,19 +2203,19 @@ class Client {
     throw new Error('not implemented yet');
     /*
     """requestId:int - The requestId specified in subscribeToGroupEvents()."""
-
-
-
+ 
+ 
+ 
     if (this._serverVersion < ServerVersion.MIN_SERVER_VER_LINKING) {
         throw new Error(              "  It does not support unsubscribeFromGroupEvents request.")
         return
-
+ 
     const VERSION = 1;
-
+ 
     msg = flds.push(OutcomeMessageType.UNSUBSCRIBE_FROM_GROUP_EVENTS) \
        + flds.push(VERSION)   \
        + flds.push(requestId)
-
+ 
     this._sendFieldsetRateLimited(msg)
     */
   }
@@ -2222,7 +2229,7 @@ class Client {
     options are trading. Can be set to the empty string "" for all
     exchanges. underlyingSecType The type of the underlying security,
     i.e. STK underlyingConId the contract ID of the underlying security.
-
+ 
     contract:
     futFopExchange:str,
     exchange: client-side filter of exchange of option's,
@@ -2271,12 +2278,12 @@ class Client {
     """Requests pre-defined Soft Dollar Tiers. This is only supported for
     registered professional advisors and hedge and mutual funds who have
     configured Soft Dollar Tiers in Account Management."""
-
-
-
+ 
+ 
+ 
     msg = flds.push(OutcomeMessageType.REQ_SOFT_DOLLAR_TIERS) \
        + flds.push(requestId)
-
+ 
     this._sendFieldsetRateLimited(msg)
     */
   }
@@ -2288,9 +2295,9 @@ class Client {
     if (this._serverVersion < ServerVersion.MIN_SERVER_VER_REQ_FAMILY_CODES) {
         throw new Error(              "  It does not support family codes request.")
         return
-
+ 
     msg = flds.push(OutcomeMessageType.REQ_FAMILY_CODES)
-
+ 
     this._sendFieldsetRateLimited(msg)
     */
   }
@@ -2303,11 +2310,11 @@ class Client {
     if (this._serverVersion < ServerVersion.MIN_SERVER_VER_REQ_MATCHING_SYMBOLS) {
         throw new Error(              "  It does not support matching symbols request.")
         return
-
+ 
     msg = flds.push(OutcomeMessageType.REQ_MATCHING_SYMBOLS) \
        + flds.push(requestId)   \
        + flds.push(pattern)
-
+ 
     this._sendFieldsetRateLimited(msg)
     */
   }
@@ -2318,15 +2325,15 @@ class Client {
     throw new Error('not implemented yet');
     /*
     apiOnly:bool
-
+ 
     """request the completed orders. If apiOnly parameter
     is true, then only completed orders placed from API are requested.
     Each completed order will be fed back through the
     completedOrder() function on the EWrapper."""
-
+ 
     msg = flds.push(OutcomeMessageType.REQ_COMPLETED_ORDERS) \
         + flds.push(apiOnly)
-
+ 
     this._sendFieldsetRateLimited(msg)
     */
   }

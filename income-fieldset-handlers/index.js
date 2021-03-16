@@ -387,7 +387,7 @@ export default {
       count: parseInt(fields.shift())
     };
 
-    this.requestIdResolve(requestId, bar);
+    this.requestIdEmit(requestId, 'bar', bar);
   },
 
 
